@@ -10,15 +10,26 @@ import temperature_pb2_grpc
 
 DB_FILE = 'temperatures.db'
 
+#database
 def init_db():
     con = sqlite3.connect(DB_FILE)
-    con.execute('CREATE TABLE IF NOT EXISTS readings (timestamp TEXT, value REAL, average REAL)')
+    con.execute('''
+        CREATE TABLE IF NOT EXISTS readings (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT    NOT NULL,
+            value     REAL    NOT NULL,
+            average   REAL    NOT NULL
+        )
+    ''')
     con.commit()
     con.close()
 
 def save_reading(record):
     con = sqlite3.connect(DB_FILE)
-    con.execute('INSERT INTO readings VALUES (?,?,?)', (record['timestamp'], record['value'], record['average']))
+    con.execute(
+        'INSERT INTO readings (timestamp, value, average) VALUES (?, ?, ?)',
+        (record['timestamp'], record['value'], record['average'])
+    )
     con.commit()
     con.close()
 
@@ -30,8 +41,10 @@ def kafka_consumer_thread():
         value_deserializer=lambda v: json.loads(v.decode()),
         auto_offset_reset='earliest'
     )
+
+    print('Kafka consumer listening on topic_processed...')
     for msg in consumer:
-        save(msg.value)
+        save_reading(msg.value)
         print(f'Saved to DB:  {msg.value}')
 
 #endpoints gRPC
@@ -58,12 +71,18 @@ class TemperatureServicer(temperature_pb2_grpc.TemperatureServiceServicer):
         con.close()
         return temperature_pb2.AverageRecord(average=round(row[0] or 0, 2), count=row[1])
 
+#main
 init_db()
+
 threading.Thread(target=kafka_consumer_thread, daemon=True).start()
 
 grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
 temperature_pb2_grpc.add_TemperatureServiceServicer_to_server(TemperatureServicer(), grpc_server)
-grpc_server.add_insecure_port('[::]:50051')
+grpc_server.add_insecure_port(f'[::]:{GRPC_PORT}')
 grpc_server.start()
-print('gRPC server running on port 50051')
-grpc_server.wait_for_termination()
+print(f'gRPC server running on port {GRPC_PORT}')
+
+try:
+    grpc_server.wait_for_termination()
+except KeyboardInterrupt:
+    print('Server stopped.')
