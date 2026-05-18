@@ -1,0 +1,2 @@
+BROKER_ADDR = 'localhost'
+BROKER_PORT = '9092'
