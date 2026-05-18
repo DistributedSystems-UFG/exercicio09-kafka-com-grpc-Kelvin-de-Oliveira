@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+service TemperatureService {
+  // returns the most recent temperature reading stored in the database
+  rpc GetLatest (Empty) returns (TemperatureRecord);
+  //returns the last N temperature readings, where N is defined by the client in HistoryRequest
+  rpc GetHistory (HistoryRequest) returns (TemperatureList);
+  // returns the overall average temperature calculated over all stored readings
+  rpc GetAverage (Empty) returns (AverageRecord);
+}
+
+message Empty {}
+
+message TemperatureRecord {
+  string timestamp = 1;
+  float  value     = 2;
+}
+
+message HistoryRequest {
+  int32 limit = 1;
+}
+
+message TemperatureList {
+  repeated TemperatureRecord records = 1;
+}
+
+message AverageRecord {
+  float average = 1;
+  int32 count   = 2;
+}

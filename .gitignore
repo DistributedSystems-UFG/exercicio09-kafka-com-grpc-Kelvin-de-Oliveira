@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+myvenv/
+venv/
+env/
+
+# gRPC generated files
+*_pb2.py
+*_pb2_grpc.py
+
+# SQLite database
+*.db
+*.sqlite3
+
+# VSCode
+.vscode/
+
+# WSL / OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
