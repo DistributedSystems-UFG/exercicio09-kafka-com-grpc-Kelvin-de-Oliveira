@@ -17,12 +17,15 @@ producer = KafkaProducer(
 )
 
 window = deque(maxlen=WINDOW_SIZE)
-
-for msg in consumer:
-    reading = msg.value
-    window.append(reading['value'])
-    average = round(sum(window) / len(window), 2)
-    processed = {'timestamp': msg.value['timestamp'], 'value': msg.value['value'], 'average': average}
-    producer.send('topic_processed', value=processed)
-    producer.flush()
-    print(f'Processed: {processed}')
+print(f'Processor started. Consuming topic_sensor, publishing to topic_processed...')
+try:
+    for msg in consumer:
+        reading = msg.value
+        window.append(reading['value'])
+        average = round(sum(window) / len(window), 2)
+        processed = {'timestamp': msg.value['timestamp'], 'value': msg.value['value'], 'average': average}
+        producer.send('topic_processed', value=processed)
+        producer.flush()
+        print(f'Processed: {processed}')
+except KeyboardInterrupt:
+    print('Processor stopped.')
